@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1049069243514",
+    "project_id": "vividcanvas-7a118",
+    "storage_bucket": "vividcanvas-7a118.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1049069243514:android:117f023ea266eaf528ffc3",
+        "android_client_info": {
+          "package_name": "com.maryamabdallahhh.vivid_canvas"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyANQIRgejPXoLjQ-OGOkdykD8C8rFAdzrw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
