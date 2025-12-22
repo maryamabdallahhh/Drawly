@@ -10,3 +10,12 @@ final boardElementsProvider =
       final service = ref.watch(firestoreServiceProvider);
       return service.streamElements(boardId);
     });
+
+final hoverStateProvider = StateProvider.family<bool, String>(
+  (ref, toolId) => false,
+);
+
+// Provider for the selected tool (default is 'selection-tool')
+final selectedToolProvider = StateProvider<String>(
+  (ref) => 'assets/icons/selection.png',
+);

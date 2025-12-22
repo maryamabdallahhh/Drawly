@@ -7,7 +7,7 @@ class InfiniteGridPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // 1. Extract zoom level and offsets from the matrix
+    //   zoom level and offsets from the matrix
     double scale = transform.getMaxScaleOnAxis();
     double translationX = transform.storage[12];
     double translationY = transform.storage[13];
@@ -16,13 +16,13 @@ class InfiniteGridPainter extends CustomPainter {
       ..color = Colors.grey
       ..strokeWidth = 1.0;
 
-    double step = 30.0 * scale; // The dots scale with you
+    double step = 30.0 * scale; // The dots scale
 
-    // 2. Calculate where the first dot should start based on movement
+    //   where the first dot should start based on movement
     double startX = translationX % step;
     double startY = translationY % step;
 
-    // 3. Draw dots across the entire visible screen
+    //   Draw dots across the entire visible screen
     for (double x = startX; x < size.width; x += step) {
       for (double y = startY; y < size.height; y += step) {
         canvas.drawCircle(Offset(x, y), 1.0 * scale, paint);
