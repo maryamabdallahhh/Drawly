@@ -27,7 +27,7 @@ class GlassContainer extends StatelessWidget {
             color: Colors.white.withOpacity(opacity),
             borderRadius: BorderRadius.circular(borderRadius),
             border: Border.all(
-              color: Colors.white.withOpacity(0.2), // Subtle glass edge
+              // color: Colors.white.withOpacity(0.2), // Subtle glass edge
               width: 1.5,
             ),
           ),

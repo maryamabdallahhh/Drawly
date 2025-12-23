@@ -19,3 +19,6 @@ final hoverStateProvider = StateProvider.family<bool, String>(
 final selectedToolProvider = StateProvider<String>(
   (ref) => 'assets/icons/selection.png',
 );
+
+// Provider for the selected sub-tool in the secondary toolbar
+final selectedSubToolProvider = StateProvider<String?>((ref) => null);
