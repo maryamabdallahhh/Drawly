@@ -6,6 +6,8 @@ class GlassContainer extends StatelessWidget {
   final double blur;
   final double opacity;
   final double borderRadius;
+  final EdgeInsets? padding;
+  final Color? color;
 
   const GlassContainer({
     super.key,
@@ -13,6 +15,8 @@ class GlassContainer extends StatelessWidget {
     this.blur = 10.0,
     this.opacity = 0.1,
     this.borderRadius = 20.0,
+    this.padding,
+    this.color,
   });
 
   @override
@@ -20,14 +24,14 @@ class GlassContainer extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(borderRadius),
       child: BackdropFilter(
-        //   the frosted effect
         filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
         child: Container(
+          padding: padding,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(opacity),
+            color: (color ?? Colors.white).withOpacity(opacity),
             borderRadius: BorderRadius.circular(borderRadius),
             border: Border.all(
-              // color: Colors.white.withOpacity(0.2), // Subtle glass edge
+              color: Colors.white.withOpacity(0.2),
               width: 1.5,
             ),
           ),
