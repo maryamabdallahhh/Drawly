@@ -1,4 +1,4 @@
-# VividCanvas 🎨
+# Drawly 🎨
 A high-performance, real-time collaborative whiteboard built with Flutter and Firebase.
 
 ## 🚀 Features (Planned)
