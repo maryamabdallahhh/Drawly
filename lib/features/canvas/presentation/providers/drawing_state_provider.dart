@@ -4,6 +4,7 @@ import '../../domain/models/drawing_path.dart';
 import '../../domain/models/drawing_point.dart';
 import '../../domain/models/drawing_settings.dart';
 import '../../domain/models/drawing_tool_type.dart';
+import '../../domain/models/resize_handle.dart';
 import '../../../../core/utils/id_generator.dart';
 
 /// Complete drawing state
@@ -13,6 +14,7 @@ class DrawingState {
   final DrawingSettings settings;
   final List<DrawingPath> redoStack;
   final List<Color> documentColors;
+  final String? selectedPathId;
 
   const DrawingState({
     this.paths = const [],
@@ -20,6 +22,7 @@ class DrawingState {
     required this.settings,
     this.redoStack = const [],
     this.documentColors = const [],
+    this.selectedPathId,
   });
 
   DrawingState copyWith({
@@ -28,6 +31,7 @@ class DrawingState {
     DrawingSettings? settings,
     List<DrawingPath>? redoStack,
     List<Color>? documentColors,
+    String? Function()? selectedPathId,
   }) {
     return DrawingState(
       paths: paths ?? this.paths,
@@ -35,6 +39,7 @@ class DrawingState {
       settings: settings ?? this.settings,
       redoStack: redoStack ?? this.redoStack,
       documentColors: documentColors ?? this.documentColors,
+      selectedPathId: selectedPathId != null ? selectedPathId() : this.selectedPathId,
     );
   }
 
@@ -170,6 +175,144 @@ class DrawingStateNotifier extends StateNotifier<DrawingState> {
           .where((c) => c.toARGB32() != color.toARGB32())
           .toList(),
     );
+  }
+
+  /// Select a path at given position (for Selection Tool)
+  void selectPathAt(Offset position) {
+    // Reverse order so top-most paths are checked first
+    for (int i = state.paths.length - 1; i >= 0; i--) {
+      final path = state.paths[i];
+      // Check if point is inside bounds.
+      if (path.bounds.contains(position)) {
+        state = state.copyWith(selectedPathId: () => path.id);
+        return;
+      }
+    }
+    // Clicked on empty space -> deselect
+    state = state.copyWith(selectedPathId: () => null);
+  }
+
+  void deselectPath() {
+    state = state.copyWith(selectedPathId: () => null);
+  }
+
+  void moveSelectedPath(Offset delta) {
+    if (state.selectedPathId == null) return;
+    
+    final index = state.paths.indexWhere((p) => p.id == state.selectedPathId);
+    if (index == -1) return;
+    
+    final path = state.paths[index];
+    final updatedPoints = path.points.map((point) {
+      return DrawingPoint(
+        position: point.position + delta,
+        paint: point.paint,
+      );
+    }).toList();
+    
+    final updatedPath = path.copyWith(points: updatedPoints);
+    final newPaths = List<DrawingPath>.from(state.paths);
+    newPaths[index] = updatedPath;
+    
+    state = state.copyWith(paths: newPaths);
+  }
+
+  void resizeSelectedPath(Offset delta, ResizeHandle handle) {
+    if (state.selectedPathId == null) return;
+    
+    final index = state.paths.indexWhere((p) => p.id == state.selectedPathId);
+    if (index == -1) return;
+    
+    final path = state.paths[index];
+    if (path.points.isEmpty) return;
+    
+    final bounds = path.bounds;
+    
+    // Calculate new bounds based on drag
+    double newLeft = bounds.left;
+    double newTop = bounds.top;
+    double newRight = bounds.right;
+    double newBottom = bounds.bottom;
+    
+    switch (handle) {
+      case ResizeHandle.topLeft:
+        newLeft += delta.dx;
+        newTop += delta.dy;
+        break;
+      case ResizeHandle.topCenter:
+        newTop += delta.dy;
+        break;
+      case ResizeHandle.topRight:
+        newRight += delta.dx;
+        newTop += delta.dy;
+        break;
+      case ResizeHandle.centerLeft:
+        newLeft += delta.dx;
+        break;
+      case ResizeHandle.centerRight:
+        newRight += delta.dx;
+        break;
+      case ResizeHandle.bottomLeft:
+        newLeft += delta.dx;
+        newBottom += delta.dy;
+        break;
+      case ResizeHandle.bottomCenter:
+        newBottom += delta.dy;
+        break;
+      case ResizeHandle.bottomRight:
+        newRight += delta.dx;
+        newBottom += delta.dy;
+        break;
+    }
+    
+    // Prevent invalid/inverted bounds
+    if (newRight <= newLeft + 10) {
+      if (handle == ResizeHandle.topLeft || handle == ResizeHandle.centerLeft || handle == ResizeHandle.bottomLeft) {
+        newLeft = bounds.left;
+      } else {
+        newRight = bounds.right;
+      }
+    }
+    
+    if (newBottom <= newTop + 10) {
+      if (handle == ResizeHandle.topLeft || handle == ResizeHandle.topCenter || handle == ResizeHandle.topRight) {
+        newTop = bounds.top;
+      } else {
+        newBottom = bounds.bottom;
+      }
+    }
+    
+    final newBounds = Rect.fromLTRB(newLeft, newTop, newRight, newBottom);
+    
+    // Scale all points to fit the new bounds
+    final scaleX = bounds.width == 0 ? 1 : newBounds.width / bounds.width;
+    final scaleY = bounds.height == 0 ? 1 : newBounds.height / bounds.height;
+    
+    final updatedPoints = path.points.map((point) {
+      // For shapes with 2 points, just move start and end directly
+      if (path.toolType.isShape && path.points.length == 2) {
+         if (point == path.points.first) {
+           return DrawingPoint(position: newBounds.topLeft, paint: point.paint);
+         } else {
+           return DrawingPoint(position: newBounds.bottomRight, paint: point.paint);
+         }
+      }
+      
+      // For freehand, scale proportionately
+      final relX = point.position.dx - bounds.left;
+      final relY = point.position.dy - bounds.top;
+      
+      return DrawingPoint(
+        position: Offset(newBounds.left + relX * scaleX, newBounds.top + relY * scaleY),
+        paint: point.paint,
+      );
+    }).toList();
+    
+    final updatedPath = path.copyWith(points: updatedPoints);
+    final newPaths = List<DrawingPath>.from(state.paths);
+    newPaths[index] = updatedPath;
+    
+    state = state.copyWith(paths: newPaths);
   }
 }
 

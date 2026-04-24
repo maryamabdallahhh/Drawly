@@ -9,8 +9,14 @@ class DrawingCanvasPainter extends CustomPainter {
   final List<DrawingPath> paths;
   final List<DrawingPoint>? currentPath;
   final DrawingToolType? currentToolType;
+  final String? selectedPathId;
 
-  const DrawingCanvasPainter({required this.paths, this.currentPath, this.currentToolType});
+  const DrawingCanvasPainter({
+    required this.paths, 
+    this.currentPath, 
+    this.currentToolType,
+    this.selectedPathId,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -32,6 +38,14 @@ class DrawingCanvasPainter extends CustomPainter {
         _drawShape(canvas, currentPath!, currentToolType!);
       } else {
         _drawPath(canvas, currentPath!);
+      }
+    }
+
+    // Draw selection bounds and handles
+    if (selectedPathId != null) {
+      final index = paths.indexWhere((p) => p.id == selectedPathId);
+      if (index != -1) {
+        _drawSelection(canvas, paths[index]);
       }
     }
 
@@ -176,8 +190,50 @@ class DrawingCanvasPainter extends CustomPainter {
     }
   }
 
+  void _drawSelection(Canvas canvas, DrawingPath path) {
+    if (path.points.isEmpty) return;
+    
+    final bounds = path.bounds;
+    
+    // Draw bounding box
+    final borderPaint = Paint()
+      ..color = Colors.blue
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
+      
+    canvas.drawRect(bounds, borderPaint);
+    
+    // Draw handles
+    final handlePaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+    final handleBorderPaint = Paint()
+      ..color = Colors.blue
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
+      
+    const handleRadius = 6.0;
+    
+    void drawHandle(Offset center) {
+      canvas.drawCircle(center, handleRadius, handlePaint);
+      canvas.drawCircle(center, handleRadius, handleBorderPaint);
+    }
+    
+    drawHandle(bounds.topLeft);
+    drawHandle(bounds.topCenter);
+    drawHandle(bounds.topRight);
+    drawHandle(bounds.centerLeft);
+    drawHandle(bounds.centerRight);
+    drawHandle(bounds.bottomLeft);
+    drawHandle(bounds.bottomCenter);
+    drawHandle(bounds.bottomRight);
+  }
+
   @override
   bool shouldRepaint(covariant DrawingCanvasPainter oldDelegate) {
-    return oldDelegate.paths != paths || oldDelegate.currentPath != currentPath || oldDelegate.currentToolType != currentToolType;
+    return oldDelegate.paths != paths || 
+           oldDelegate.currentPath != currentPath || 
+           oldDelegate.currentToolType != currentToolType ||
+           oldDelegate.selectedPathId != selectedPathId;
   }
 }

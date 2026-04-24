@@ -42,6 +42,12 @@ final isDrawingModeProvider = Provider<bool>((ref) {
   return drawingTools.contains(subTool.label) || shapeTools.contains(subTool.label);
 });
 
+// Is currently in selection mode
+final isSelectionModeProvider = Provider<bool>((ref) {
+  final tool = ref.watch(currentToolProvider);
+  return tool == ToolType.selection;
+});
+
 // Can undo/redo
 final canUndoProvider = Provider<bool>((ref) {
   return ref.watch(drawingStateProvider).canUndo;

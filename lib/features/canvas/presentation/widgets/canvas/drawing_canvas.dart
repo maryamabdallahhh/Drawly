@@ -8,9 +8,10 @@ class DrawingCanvas extends StatelessWidget {
   final List<DrawingPath> paths;
   final List<DrawingPoint>? currentPath;
   final DrawingToolType? currentToolType;
+  final String? selectedPathId;
   final bool isEnabled;
   final Function(Offset) onDrawStart;
-  final Function(Offset) onDrawUpdate;
+  final Function(Offset, Offset) onDrawUpdate;
   final VoidCallback onDrawEnd;
 
   const DrawingCanvas({
@@ -18,6 +19,7 @@ class DrawingCanvas extends StatelessWidget {
     required this.paths,
     this.currentPath,
     this.currentToolType,
+    this.selectedPathId,
     required this.isEnabled,
     required this.onDrawStart,
     required this.onDrawUpdate,
@@ -27,7 +29,12 @@ class DrawingCanvas extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
-      painter: DrawingCanvasPainter(paths: paths, currentPath: currentPath, currentToolType: currentToolType),
+      painter: DrawingCanvasPainter(
+        paths: paths, 
+        currentPath: currentPath, 
+        currentToolType: currentToolType,
+        selectedPathId: selectedPathId,
+      ),
       child: isEnabled
           ? GestureDetector(
               // ✅ CRITICAL: Use translucent so it doesn't block everything
@@ -37,7 +44,7 @@ class DrawingCanvas extends StatelessWidget {
                 onDrawStart(details.localPosition);
               },
               onPanUpdate: (details) {
-                onDrawUpdate(details.localPosition);
+                onDrawUpdate(details.localPosition, details.delta);
               },
               onPanEnd: (_) {
                 // print('🖌️ Pan END on canvas');
