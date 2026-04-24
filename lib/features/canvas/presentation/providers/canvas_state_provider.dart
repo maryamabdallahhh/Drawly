@@ -38,7 +38,8 @@ final isDrawingModeProvider = Provider<bool>((ref) {
   if (subTool == null) return false;
 
   const drawingTools = ['Pen', 'Marker', 'Highlighter', 'Eraser'];
-  return drawingTools.contains(subTool.label);
+  const shapeTools = ['Circle', 'Rectangle', 'Rounded Rectangle', 'Triangle', 'Down Triangle', 'Asterisk', 'Heart', 'Hexagonal'];
+  return drawingTools.contains(subTool.label) || shapeTools.contains(subTool.label);
 });
 
 // Can undo/redo

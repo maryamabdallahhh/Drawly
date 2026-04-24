@@ -70,7 +70,13 @@ class DrawingStateNotifier extends StateNotifier<DrawingState> {
     if (current == null || current.isEmpty) return;
 
     final point = DrawingPoint(position: position, paint: current.first.paint);
-    state = state.copyWith(currentPath: () => [...current, point]);
+    
+    if (state.settings.toolType.isShape) {
+      // Shapes only need start and current end point (bounding box)
+      state = state.copyWith(currentPath: () => [current.first, point]);
+    } else {
+      state = state.copyWith(currentPath: () => [...current, point]);
+    }
   }
 
   /// Complete the current path
