@@ -54,6 +54,7 @@ class _CanvasWidgetState extends ConsumerState<CanvasWidget> {
               child: DrawingCanvas(
                 paths: drawingState.paths,
                 currentPath: drawingState.currentPath,
+                currentToolType: drawingState.settings.toolType,
                 isEnabled: isDrawingMode,
                 onDrawStart: _handleDrawStart,
                 onDrawUpdate: _handleDrawUpdate,

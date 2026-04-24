@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:vivid_canvas/features/canvas/domain/models/drawing_path.dart';
 import 'package:vivid_canvas/features/canvas/domain/models/drawing_point.dart';
+import 'package:vivid_canvas/features/canvas/domain/models/drawing_tool_type.dart';
 import 'package:vivid_canvas/features/canvas/presentation/widgets/canvas/drawing_canvas_painter.dart';
 
 class DrawingCanvas extends StatelessWidget {
   final List<DrawingPath> paths;
   final List<DrawingPoint>? currentPath;
+  final DrawingToolType? currentToolType;
   final bool isEnabled;
   final Function(Offset) onDrawStart;
   final Function(Offset) onDrawUpdate;
@@ -15,6 +17,7 @@ class DrawingCanvas extends StatelessWidget {
     super.key,
     required this.paths,
     this.currentPath,
+    this.currentToolType,
     required this.isEnabled,
     required this.onDrawStart,
     required this.onDrawUpdate,
@@ -24,7 +27,7 @@ class DrawingCanvas extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
-      painter: DrawingCanvasPainter(paths: paths, currentPath: currentPath),
+      painter: DrawingCanvasPainter(paths: paths, currentPath: currentPath, currentToolType: currentToolType),
       child: isEnabled
           ? GestureDetector(
               // ✅ CRITICAL: Use translucent so it doesn't block everything
