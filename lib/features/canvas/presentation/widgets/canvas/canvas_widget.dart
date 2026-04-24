@@ -104,11 +104,9 @@ class _CanvasWidgetState extends ConsumerState<CanvasWidget> {
         if (_hitTestHandle(localPosition, drawingState) != null) {
           hitHandleOrSelectedShape = true;
         } else {
-          for (final path in drawingState.paths) {
-            if (drawingState.selectedPathIds.contains(path.id) && path.bounds.contains(localPosition)) {
-               hitHandleOrSelectedShape = true;
-               break;
-            }
+          final selectionBounds = _getSelectionBounds(drawingState);
+          if (selectionBounds != null && selectionBounds.contains(localPosition)) {
+            hitHandleOrSelectedShape = true;
           }
         }
       }
@@ -165,12 +163,17 @@ class _CanvasWidgetState extends ConsumerState<CanvasWidget> {
       return;
     }
     
-    // Check if hovering over ANY shape
+    // Check if hovering over unified selection bounds
     bool hoveredShape = false;
-    for (int i = drawingState.paths.length - 1; i >= 0; i--) {
-      if (drawingState.paths[i].bounds.contains(position)) {
-        hoveredShape = true;
-        break;
+    final selectionBounds = _getSelectionBounds(drawingState);
+    if (selectionBounds != null && selectionBounds.contains(position)) {
+      hoveredShape = true;
+    } else {
+      for (int i = drawingState.paths.length - 1; i >= 0; i--) {
+        if (drawingState.paths[i].bounds.contains(position)) {
+          hoveredShape = true;
+          break;
+        }
       }
     }
     
@@ -185,7 +188,7 @@ class _CanvasWidgetState extends ConsumerState<CanvasWidget> {
     }
   }
 
-  ResizeHandle? _hitTestHandle(Offset position, DrawingState state) {
+  Rect? _getSelectionBounds(DrawingState state) {
     if (state.selectedPathIds.isEmpty) return null;
     
     final selectedPaths = state.paths.where((p) => state.selectedPathIds.contains(p.id) && p.points.isNotEmpty).toList();
@@ -204,7 +207,13 @@ class _CanvasWidgetState extends ConsumerState<CanvasWidget> {
       if (b.bottom > maxY) maxY = b.bottom;
     }
     
-    final bounds = Rect.fromLTRB(minX, minY, maxX, maxY);
+    return Rect.fromLTRB(minX, minY, maxX, maxY);
+  }
+
+  ResizeHandle? _hitTestHandle(Offset position, DrawingState state) {
+    final bounds = _getSelectionBounds(state);
+    if (bounds == null) return null;
+    
     const hitSlop = 16.0;
     
     bool containsPoint(Offset center) {
@@ -238,13 +247,9 @@ class _CanvasWidgetState extends ConsumerState<CanvasWidget> {
         _activeResizeHandle = null;
         
         bool hitSelected = false;
-        if (drawingState.selectedPathIds.isNotEmpty) {
-          for (final path in drawingState.paths) {
-            if (drawingState.selectedPathIds.contains(path.id) && path.bounds.contains(position)) {
-              hitSelected = true;
-              break;
-            }
-          }
+        final selectionBounds = _getSelectionBounds(drawingState);
+        if (selectionBounds != null && selectionBounds.contains(position)) {
+          hitSelected = true;
         }
         
         if (hitSelected) {
