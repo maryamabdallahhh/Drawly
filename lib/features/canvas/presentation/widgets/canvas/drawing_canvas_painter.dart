@@ -9,8 +9,16 @@ class DrawingCanvasPainter extends CustomPainter {
   final List<DrawingPath> paths;
   final List<DrawingPoint>? currentPath;
   final DrawingToolType? currentToolType;
+  final Set<String> selectedPathIds;
+  final Rect? selectionMarquee;
 
-  const DrawingCanvasPainter({required this.paths, this.currentPath, this.currentToolType});
+  const DrawingCanvasPainter({
+    required this.paths, 
+    this.currentPath, 
+    this.currentToolType,
+    this.selectedPathIds = const {},
+    this.selectionMarquee,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -33,6 +41,28 @@ class DrawingCanvasPainter extends CustomPainter {
       } else {
         _drawPath(canvas, currentPath!);
       }
+    }
+
+    // Draw selection bounds and handles
+    if (selectedPathIds.isNotEmpty) {
+      final selectedPaths = paths.where((p) => selectedPathIds.contains(p.id) && p.points.isNotEmpty).toList();
+      if (selectedPaths.isNotEmpty) {
+        _drawSelection(canvas, selectedPaths);
+      }
+    }
+    
+    // Draw Marquee
+    if (selectionMarquee != null) {
+      final fillPaint = Paint()
+        ..color = Colors.blue.withAlpha(51) // ~0.2 opacity
+        ..style = PaintingStyle.fill;
+      final strokePaint = Paint()
+        ..color = Colors.blue
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.0;
+        
+      canvas.drawRect(selectionMarquee!, fillPaint);
+      canvas.drawRect(selectionMarquee!, strokePaint);
     }
 
     canvas.restore();
@@ -176,8 +206,64 @@ class DrawingCanvasPainter extends CustomPainter {
     }
   }
 
+  void _drawSelection(Canvas canvas, List<DrawingPath> selectedPaths) {
+    if (selectedPaths.isEmpty) return;
+    
+    double minX = double.infinity;
+    double minY = double.infinity;
+    double maxX = double.negativeInfinity;
+    double maxY = double.negativeInfinity;
+    
+    for (final path in selectedPaths) {
+      final bounds = path.bounds;
+      if (bounds.left < minX) minX = bounds.left;
+      if (bounds.top < minY) minY = bounds.top;
+      if (bounds.right > maxX) maxX = bounds.right;
+      if (bounds.bottom > maxY) maxY = bounds.bottom;
+    }
+    
+    final bounds = Rect.fromLTRB(minX, minY, maxX, maxY);
+    
+    // Draw bounding box
+    final borderPaint = Paint()
+      ..color = Colors.blue
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
+      
+    canvas.drawRect(bounds, borderPaint);
+    
+    // Draw handles
+    final handlePaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+    final handleBorderPaint = Paint()
+      ..color = Colors.blue
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
+      
+    const handleRadius = 6.0;
+    
+    void drawHandle(Offset center) {
+      canvas.drawCircle(center, handleRadius, handlePaint);
+      canvas.drawCircle(center, handleRadius, handleBorderPaint);
+    }
+    
+    drawHandle(bounds.topLeft);
+    drawHandle(bounds.topCenter);
+    drawHandle(bounds.topRight);
+    drawHandle(bounds.centerLeft);
+    drawHandle(bounds.centerRight);
+    drawHandle(bounds.bottomLeft);
+    drawHandle(bounds.bottomCenter);
+    drawHandle(bounds.bottomRight);
+  }
+
   @override
   bool shouldRepaint(covariant DrawingCanvasPainter oldDelegate) {
-    return oldDelegate.paths != paths || oldDelegate.currentPath != currentPath || oldDelegate.currentToolType != currentToolType;
+    return oldDelegate.paths != paths || 
+           oldDelegate.currentPath != currentPath || 
+           oldDelegate.currentToolType != currentToolType ||
+           oldDelegate.selectedPathIds != selectedPathIds ||
+           oldDelegate.selectionMarquee != selectionMarquee;
   }
 }
