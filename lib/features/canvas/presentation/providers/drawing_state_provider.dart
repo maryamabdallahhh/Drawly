@@ -192,6 +192,10 @@ class DrawingStateNotifier extends StateNotifier<DrawingState> {
     state = state.copyWith(selectedPathId: () => null);
   }
 
+  void selectPathById(String id) {
+    state = state.copyWith(selectedPathId: () => id);
+  }
+
   void deselectPath() {
     state = state.copyWith(selectedPathId: () => null);
   }

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vivid_canvas/features/canvas/presentation/providers/canvas_state_provider.dart';
 import 'package:vivid_canvas/features/canvas/presentation/providers/drawing_state_provider.dart';
 import 'package:vivid_canvas/features/canvas/presentation/providers/ui_state_provider.dart';
+import 'package:vivid_canvas/features/canvas/presentation/providers/tool_state_provider.dart';
+import 'package:vivid_canvas/features/canvas/domain/models/tool_type.dart';
 import 'package:vivid_canvas/features/canvas/domain/models/resize_handle.dart';
 import 'drawing_canvas.dart';
 import 'grid_painter.dart';
@@ -79,6 +81,9 @@ class _CanvasWidgetState extends ConsumerState<CanvasWidget> {
   }
 
   void _handleBackgroundTap(TapDownDetails details) {
+    // Global Deselection on background tap
+    ref.read(drawingStateProvider.notifier).deselectPath();
+    
     // Close panels when tapping background (not toolbar area)
     final toolbarRect = Rect.fromLTWH(100, 50, 400, 600);
     if (!toolbarRect.contains(details.globalPosition)) {
@@ -213,6 +218,14 @@ class _CanvasWidgetState extends ConsumerState<CanvasWidget> {
       _activeResizeHandle = null;
     } else {
       ref.read(drawingStateProvider.notifier).completePath();
+      
+      final drawingState = ref.read(drawingStateProvider);
+      if (drawingState.settings.toolType.isShape) {
+         if (drawingState.paths.isNotEmpty) {
+           ref.read(drawingStateProvider.notifier).selectPathById(drawingState.paths.last.id);
+         }
+         ref.read(toolStateProvider.notifier).selectTool(ToolType.selection);
+      }
     }
   }
 }

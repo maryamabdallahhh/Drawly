@@ -50,6 +50,9 @@ class SubToolButton extends ConsumerWidget {
 
   void _handleTap(WidgetRef ref) {
     ref.read(toolStateProvider.notifier).selectSubTool(subTool);
+    
+    // Auto-Deselect on Tool Change
+    ref.read(drawingStateProvider.notifier).deselectPath();
 
     final toolTypeMap = {
       'Pen': DrawingToolType.pen,
