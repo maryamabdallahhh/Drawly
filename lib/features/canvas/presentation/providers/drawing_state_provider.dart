@@ -14,7 +14,7 @@ class DrawingState {
   final DrawingSettings settings;
   final List<DrawingPath> redoStack;
   final List<Color> documentColors;
-  final String? selectedPathId;
+  final Set<String> selectedPathIds;
 
   const DrawingState({
     this.paths = const [],
@@ -22,7 +22,7 @@ class DrawingState {
     required this.settings,
     this.redoStack = const [],
     this.documentColors = const [],
-    this.selectedPathId,
+    this.selectedPathIds = const {},
   });
 
   DrawingState copyWith({
@@ -31,7 +31,7 @@ class DrawingState {
     DrawingSettings? settings,
     List<DrawingPath>? redoStack,
     List<Color>? documentColors,
-    String? Function()? selectedPathId,
+    Set<String>? selectedPathIds,
   }) {
     return DrawingState(
       paths: paths ?? this.paths,
@@ -39,7 +39,7 @@ class DrawingState {
       settings: settings ?? this.settings,
       redoStack: redoStack ?? this.redoStack,
       documentColors: documentColors ?? this.documentColors,
-      selectedPathId: selectedPathId != null ? selectedPathId() : this.selectedPathId,
+      selectedPathIds: selectedPathIds ?? this.selectedPathIds,
     );
   }
 
@@ -184,53 +184,74 @@ class DrawingStateNotifier extends StateNotifier<DrawingState> {
       final path = state.paths[i];
       // Check if point is inside bounds.
       if (path.bounds.contains(position)) {
-        state = state.copyWith(selectedPathId: () => path.id);
+        state = state.copyWith(selectedPathIds: {path.id});
         return;
       }
     }
     // Clicked on empty space -> deselect
-    state = state.copyWith(selectedPathId: () => null);
+    state = state.copyWith(selectedPathIds: {});
   }
 
   void selectPathById(String id) {
-    state = state.copyWith(selectedPathId: () => id);
+    state = state.copyWith(selectedPathIds: {id});
   }
 
   void deselectPath() {
-    state = state.copyWith(selectedPathId: () => null);
+    state = state.copyWith(selectedPathIds: {});
+  }
+  
+  void selectPathsInRect(Rect marquee) {
+    final selectedIds = <String>{};
+    for (final path in state.paths) {
+      if (path.bounds.overlaps(marquee)) {
+        selectedIds.add(path.id);
+      }
+    }
+    state = state.copyWith(selectedPathIds: selectedIds);
   }
 
   void moveSelectedPath(Offset delta) {
-    if (state.selectedPathId == null) return;
+    if (state.selectedPathIds.isEmpty) return;
     
-    final index = state.paths.indexWhere((p) => p.id == state.selectedPathId);
-    if (index == -1) return;
-    
-    final path = state.paths[index];
-    final updatedPoints = path.points.map((point) {
-      return DrawingPoint(
-        position: point.position + delta,
-        paint: point.paint,
-      );
-    }).toList();
-    
-    final updatedPath = path.copyWith(points: updatedPoints);
     final newPaths = List<DrawingPath>.from(state.paths);
-    newPaths[index] = updatedPath;
+    
+    for (int i = 0; i < newPaths.length; i++) {
+      final path = newPaths[i];
+      if (state.selectedPathIds.contains(path.id)) {
+        final updatedPoints = path.points.map((point) {
+          return DrawingPoint(
+            position: point.position + delta,
+            paint: point.paint,
+          );
+        }).toList();
+        newPaths[i] = path.copyWith(points: updatedPoints);
+      }
+    }
     
     state = state.copyWith(paths: newPaths);
   }
 
   void resizeSelectedPath(Offset delta, ResizeHandle handle) {
-    if (state.selectedPathId == null) return;
+    if (state.selectedPathIds.isEmpty) return;
     
-    final index = state.paths.indexWhere((p) => p.id == state.selectedPathId);
-    if (index == -1) return;
+    // Get unified bounds
+    final selectedPaths = state.paths.where((p) => state.selectedPathIds.contains(p.id) && p.points.isNotEmpty).toList();
+    if (selectedPaths.isEmpty) return;
     
-    final path = state.paths[index];
-    if (path.points.isEmpty) return;
+    double minX = double.infinity;
+    double minY = double.infinity;
+    double maxX = double.negativeInfinity;
+    double maxY = double.negativeInfinity;
     
-    final bounds = path.bounds;
+    for (final path in selectedPaths) {
+      final bounds = path.bounds;
+      if (bounds.left < minX) minX = bounds.left;
+      if (bounds.top < minY) minY = bounds.top;
+      if (bounds.right > maxX) maxX = bounds.right;
+      if (bounds.bottom > maxY) maxY = bounds.bottom;
+    }
+    
+    final bounds = Rect.fromLTRB(minX, minY, maxX, maxY);
     
     // Calculate new bounds based on drag
     double newLeft = bounds.left;
@@ -288,33 +309,26 @@ class DrawingStateNotifier extends StateNotifier<DrawingState> {
     
     final newBounds = Rect.fromLTRB(newLeft, newTop, newRight, newBottom);
     
-    // Scale all points to fit the new bounds
     final scaleX = bounds.width == 0 ? 1 : newBounds.width / bounds.width;
     final scaleY = bounds.height == 0 ? 1 : newBounds.height / bounds.height;
     
-    final updatedPoints = path.points.map((point) {
-      // For shapes with 2 points, just move start and end directly
-      if (path.toolType.isShape && path.points.length == 2) {
-         if (point == path.points.first) {
-           return DrawingPoint(position: newBounds.topLeft, paint: point.paint);
-         } else {
-           return DrawingPoint(position: newBounds.bottomRight, paint: point.paint);
-         }
-      }
-      
-      // For freehand, scale proportionately
-      final relX = point.position.dx - bounds.left;
-      final relY = point.position.dy - bounds.top;
-      
-      return DrawingPoint(
-        position: Offset(newBounds.left + relX * scaleX, newBounds.top + relY * scaleY),
-        paint: point.paint,
-      );
-    }).toList();
-    
-    final updatedPath = path.copyWith(points: updatedPoints);
     final newPaths = List<DrawingPath>.from(state.paths);
-    newPaths[index] = updatedPath;
+    
+    for (int i = 0; i < newPaths.length; i++) {
+      final path = newPaths[i];
+      if (state.selectedPathIds.contains(path.id) && path.points.isNotEmpty) {
+        final updatedPoints = path.points.map((point) {
+          final relX = point.position.dx - bounds.left;
+          final relY = point.position.dy - bounds.top;
+          
+          return DrawingPoint(
+            position: Offset(newBounds.left + relX * scaleX, newBounds.top + relY * scaleY),
+            paint: point.paint,
+          );
+        }).toList();
+        newPaths[i] = path.copyWith(points: updatedPoints);
+      }
+    }
     
     state = state.copyWith(paths: newPaths);
   }

@@ -8,7 +8,8 @@ class DrawingCanvas extends StatelessWidget {
   final List<DrawingPath> paths;
   final List<DrawingPoint>? currentPath;
   final DrawingToolType? currentToolType;
-  final String? selectedPathId;
+  final Set<String> selectedPathIds;
+  final Rect? selectionMarquee;
   final bool isEnabled;
   final Function(Offset) onDrawStart;
   final Function(Offset, Offset) onDrawUpdate;
@@ -19,7 +20,8 @@ class DrawingCanvas extends StatelessWidget {
     required this.paths,
     this.currentPath,
     this.currentToolType,
-    this.selectedPathId,
+    this.selectedPathIds = const {},
+    this.selectionMarquee,
     required this.isEnabled,
     required this.onDrawStart,
     required this.onDrawUpdate,
@@ -33,7 +35,8 @@ class DrawingCanvas extends StatelessWidget {
         paths: paths, 
         currentPath: currentPath, 
         currentToolType: currentToolType,
-        selectedPathId: selectedPathId,
+        selectedPathIds: selectedPathIds,
+        selectionMarquee: selectionMarquee,
       ),
       child: isEnabled
           ? GestureDetector(

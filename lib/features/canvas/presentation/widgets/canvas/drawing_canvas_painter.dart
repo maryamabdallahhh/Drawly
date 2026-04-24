@@ -9,13 +9,15 @@ class DrawingCanvasPainter extends CustomPainter {
   final List<DrawingPath> paths;
   final List<DrawingPoint>? currentPath;
   final DrawingToolType? currentToolType;
-  final String? selectedPathId;
+  final Set<String> selectedPathIds;
+  final Rect? selectionMarquee;
 
   const DrawingCanvasPainter({
     required this.paths, 
     this.currentPath, 
     this.currentToolType,
-    this.selectedPathId,
+    this.selectedPathIds = const {},
+    this.selectionMarquee,
   });
 
   @override
@@ -42,11 +44,25 @@ class DrawingCanvasPainter extends CustomPainter {
     }
 
     // Draw selection bounds and handles
-    if (selectedPathId != null) {
-      final index = paths.indexWhere((p) => p.id == selectedPathId);
-      if (index != -1) {
-        _drawSelection(canvas, paths[index]);
+    if (selectedPathIds.isNotEmpty) {
+      final selectedPaths = paths.where((p) => selectedPathIds.contains(p.id) && p.points.isNotEmpty).toList();
+      if (selectedPaths.isNotEmpty) {
+        _drawSelection(canvas, selectedPaths);
       }
+    }
+    
+    // Draw Marquee
+    if (selectionMarquee != null) {
+      final fillPaint = Paint()
+        ..color = Colors.blue.withAlpha(51) // ~0.2 opacity
+        ..style = PaintingStyle.fill;
+      final strokePaint = Paint()
+        ..color = Colors.blue
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.0;
+        
+      canvas.drawRect(selectionMarquee!, fillPaint);
+      canvas.drawRect(selectionMarquee!, strokePaint);
     }
 
     canvas.restore();
@@ -190,10 +206,23 @@ class DrawingCanvasPainter extends CustomPainter {
     }
   }
 
-  void _drawSelection(Canvas canvas, DrawingPath path) {
-    if (path.points.isEmpty) return;
+  void _drawSelection(Canvas canvas, List<DrawingPath> selectedPaths) {
+    if (selectedPaths.isEmpty) return;
     
-    final bounds = path.bounds;
+    double minX = double.infinity;
+    double minY = double.infinity;
+    double maxX = double.negativeInfinity;
+    double maxY = double.negativeInfinity;
+    
+    for (final path in selectedPaths) {
+      final bounds = path.bounds;
+      if (bounds.left < minX) minX = bounds.left;
+      if (bounds.top < minY) minY = bounds.top;
+      if (bounds.right > maxX) maxX = bounds.right;
+      if (bounds.bottom > maxY) maxY = bounds.bottom;
+    }
+    
+    final bounds = Rect.fromLTRB(minX, minY, maxX, maxY);
     
     // Draw bounding box
     final borderPaint = Paint()
@@ -234,6 +263,7 @@ class DrawingCanvasPainter extends CustomPainter {
     return oldDelegate.paths != paths || 
            oldDelegate.currentPath != currentPath || 
            oldDelegate.currentToolType != currentToolType ||
-           oldDelegate.selectedPathId != selectedPathId;
+           oldDelegate.selectedPathIds != selectedPathIds ||
+           oldDelegate.selectionMarquee != selectionMarquee;
   }
 }

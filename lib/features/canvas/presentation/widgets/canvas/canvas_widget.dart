@@ -19,8 +19,18 @@ class CanvasWidget extends ConsumerStatefulWidget {
 class _CanvasWidgetState extends ConsumerState<CanvasWidget> {
   late TransformationController _transformController;
   bool _isDraggingSelection = false;
+  bool _isDraggingMarquee = false;
+  Offset? _marqueeStart;
+  Offset? _marqueeCurrent;
   ResizeHandle? _activeResizeHandle;
   MouseCursor _cursor = SystemMouseCursors.basic;
+
+  Rect? get _currentMarquee {
+    if (_isDraggingMarquee && _marqueeStart != null && _marqueeCurrent != null) {
+      return Rect.fromPoints(_marqueeStart!, _marqueeCurrent!);
+    }
+    return null;
+  }
 
   @override
   void initState() {
@@ -66,7 +76,8 @@ class _CanvasWidgetState extends ConsumerState<CanvasWidget> {
                   paths: drawingState.paths,
                   currentPath: drawingState.currentPath,
                   currentToolType: drawingState.settings.toolType,
-                  selectedPathId: drawingState.selectedPathId,
+                  selectedPathIds: drawingState.selectedPathIds,
+                  selectionMarquee: _currentMarquee,
                   isEnabled: isCanvasEnabled,
                   onDrawStart: _handleDrawStart,
                   onDrawUpdate: _handleDrawUpdate,
@@ -81,8 +92,32 @@ class _CanvasWidgetState extends ConsumerState<CanvasWidget> {
   }
 
   void _handleBackgroundTap(TapDownDetails details) {
-    // Global Deselection on background tap
-    ref.read(drawingStateProvider.notifier).deselectPath();
+    final drawingState = ref.read(drawingStateProvider);
+    
+    // Convert global position to local position
+    final renderBox = context.findRenderObject() as RenderBox?;
+    if (renderBox != null) {
+      final localPosition = renderBox.globalToLocal(details.globalPosition);
+      
+      bool hitHandleOrSelectedShape = false;
+      if (drawingState.selectedPathIds.isNotEmpty) {
+        if (_hitTestHandle(localPosition, drawingState) != null) {
+          hitHandleOrSelectedShape = true;
+        } else {
+          for (final path in drawingState.paths) {
+            if (drawingState.selectedPathIds.contains(path.id) && path.bounds.contains(localPosition)) {
+               hitHandleOrSelectedShape = true;
+               break;
+            }
+          }
+        }
+      }
+
+      if (!hitHandleOrSelectedShape) {
+        // Global Deselection on background tap only if we didn't hit the active object
+        ref.read(drawingStateProvider.notifier).deselectPath();
+      }
+    }
     
     // Close panels when tapping background (not toolbar area)
     final toolbarRect = Rect.fromLTWH(100, 50, 400, 600);
@@ -151,13 +186,25 @@ class _CanvasWidgetState extends ConsumerState<CanvasWidget> {
   }
 
   ResizeHandle? _hitTestHandle(Offset position, DrawingState state) {
-    if (state.selectedPathId == null) return null;
+    if (state.selectedPathIds.isEmpty) return null;
     
-    final index = state.paths.indexWhere((p) => p.id == state.selectedPathId);
-    if (index == -1) return null;
-    final path = state.paths[index];
+    final selectedPaths = state.paths.where((p) => state.selectedPathIds.contains(p.id) && p.points.isNotEmpty).toList();
+    if (selectedPaths.isEmpty) return null;
     
-    final bounds = path.bounds;
+    double minX = double.infinity;
+    double minY = double.infinity;
+    double maxX = double.negativeInfinity;
+    double maxY = double.negativeInfinity;
+    
+    for (final path in selectedPaths) {
+      final b = path.bounds;
+      if (b.left < minX) minX = b.left;
+      if (b.top < minY) minY = b.top;
+      if (b.right > maxX) maxX = b.right;
+      if (b.bottom > maxY) maxY = b.bottom;
+    }
+    
+    final bounds = Rect.fromLTRB(minX, minY, maxX, maxY);
     const hitSlop = 16.0;
     
     bool containsPoint(Offset center) {
@@ -186,12 +233,38 @@ class _CanvasWidgetState extends ConsumerState<CanvasWidget> {
       if (handle != null) {
         _activeResizeHandle = handle;
         _isDraggingSelection = true;
+        _isDraggingMarquee = false;
       } else {
         _activeResizeHandle = null;
-        ref.read(drawingStateProvider.notifier).selectPathAt(position);
         
-        final newState = ref.read(drawingStateProvider);
-        _isDraggingSelection = newState.selectedPathId != null;
+        bool hitSelected = false;
+        if (drawingState.selectedPathIds.isNotEmpty) {
+          for (final path in drawingState.paths) {
+            if (drawingState.selectedPathIds.contains(path.id) && path.bounds.contains(position)) {
+              hitSelected = true;
+              break;
+            }
+          }
+        }
+        
+        if (hitSelected) {
+          _isDraggingSelection = true;
+          _isDraggingMarquee = false;
+        } else {
+          ref.read(drawingStateProvider.notifier).selectPathAt(position);
+          final newState = ref.read(drawingStateProvider);
+          if (newState.selectedPathIds.isNotEmpty) {
+             _isDraggingSelection = true;
+             _isDraggingMarquee = false;
+          } else {
+             _isDraggingSelection = false;
+             setState(() {
+               _isDraggingMarquee = true;
+               _marqueeStart = position;
+               _marqueeCurrent = position;
+             });
+          }
+        }
       }
     } else {
       ref.read(drawingStateProvider.notifier).startPath(position);
@@ -200,7 +273,15 @@ class _CanvasWidgetState extends ConsumerState<CanvasWidget> {
 
   void _handleDrawUpdate(Offset position, Offset delta) {
     if (ref.read(isSelectionModeProvider)) {
-      if (_isDraggingSelection) {
+      if (_isDraggingMarquee) {
+        setState(() {
+          _marqueeCurrent = position;
+        });
+        final marquee = _currentMarquee;
+        if (marquee != null) {
+          ref.read(drawingStateProvider.notifier).selectPathsInRect(marquee);
+        }
+      } else if (_isDraggingSelection) {
         if (_activeResizeHandle != null) {
           ref.read(drawingStateProvider.notifier).resizeSelectedPath(delta, _activeResizeHandle!);
         } else {
@@ -214,6 +295,13 @@ class _CanvasWidgetState extends ConsumerState<CanvasWidget> {
 
   void _handleDrawEnd() {
     if (ref.read(isSelectionModeProvider)) {
+      if (_isDraggingMarquee) {
+        setState(() {
+          _isDraggingMarquee = false;
+          _marqueeStart = null;
+          _marqueeCurrent = null;
+        });
+      }
       _isDraggingSelection = false;
       _activeResizeHandle = null;
     } else {
