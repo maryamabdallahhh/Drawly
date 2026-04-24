@@ -18,6 +18,7 @@ class _CanvasWidgetState extends ConsumerState<CanvasWidget> {
   late TransformationController _transformController;
   bool _isDraggingSelection = false;
   ResizeHandle? _activeResizeHandle;
+  MouseCursor _cursor = SystemMouseCursors.basic;
 
   @override
   void initState() {
@@ -55,16 +56,20 @@ class _CanvasWidgetState extends ConsumerState<CanvasWidget> {
 
           // Drawing layer
           Positioned.fill(
-            child: RepaintBoundary(
-              child: DrawingCanvas(
-                paths: drawingState.paths,
-                currentPath: drawingState.currentPath,
-                currentToolType: drawingState.settings.toolType,
-                selectedPathId: drawingState.selectedPathId,
-                isEnabled: isCanvasEnabled,
-                onDrawStart: _handleDrawStart,
-                onDrawUpdate: _handleDrawUpdate,
-                onDrawEnd: _handleDrawEnd,
+            child: MouseRegion(
+              cursor: _cursor,
+              onHover: _handleHover,
+              child: RepaintBoundary(
+                child: DrawingCanvas(
+                  paths: drawingState.paths,
+                  currentPath: drawingState.currentPath,
+                  currentToolType: drawingState.settings.toolType,
+                  selectedPathId: drawingState.selectedPathId,
+                  isEnabled: isCanvasEnabled,
+                  onDrawStart: _handleDrawStart,
+                  onDrawUpdate: _handleDrawUpdate,
+                  onDrawEnd: _handleDrawEnd,
+                ),
               ),
             ),
           ),
@@ -78,6 +83,65 @@ class _CanvasWidgetState extends ConsumerState<CanvasWidget> {
     final toolbarRect = Rect.fromLTWH(100, 50, 400, 600);
     if (!toolbarRect.contains(details.globalPosition)) {
       ref.read(uiStateProvider.notifier).closeAllPanels();
+    }
+  }
+
+  void _handleHover(PointerEvent event) {
+    if (!ref.read(isSelectionModeProvider)) {
+      if (_cursor != SystemMouseCursors.basic) {
+        setState(() => _cursor = SystemMouseCursors.basic);
+      }
+      return;
+    }
+
+    final position = event.localPosition;
+    final drawingState = ref.read(drawingStateProvider);
+    
+    // Check if hovering over a handle
+    final handle = _hitTestHandle(position, drawingState);
+    if (handle != null) {
+      MouseCursor newCursor;
+      switch (handle) {
+        case ResizeHandle.topLeft:
+        case ResizeHandle.bottomRight:
+          newCursor = SystemMouseCursors.resizeUpLeftDownRight;
+          break;
+        case ResizeHandle.topRight:
+        case ResizeHandle.bottomLeft:
+          newCursor = SystemMouseCursors.resizeUpRightDownLeft;
+          break;
+        case ResizeHandle.topCenter:
+        case ResizeHandle.bottomCenter:
+          newCursor = SystemMouseCursors.resizeUpDown;
+          break;
+        case ResizeHandle.centerLeft:
+        case ResizeHandle.centerRight:
+          newCursor = SystemMouseCursors.resizeLeftRight;
+          break;
+      }
+      if (_cursor != newCursor) {
+        setState(() => _cursor = newCursor);
+      }
+      return;
+    }
+    
+    // Check if hovering over ANY shape
+    bool hoveredShape = false;
+    for (int i = drawingState.paths.length - 1; i >= 0; i--) {
+      if (drawingState.paths[i].bounds.contains(position)) {
+        hoveredShape = true;
+        break;
+      }
+    }
+    
+    if (hoveredShape) {
+      if (_cursor != SystemMouseCursors.move) {
+        setState(() => _cursor = SystemMouseCursors.move);
+      }
+    } else {
+      if (_cursor != SystemMouseCursors.basic) {
+        setState(() => _cursor = SystemMouseCursors.basic);
+      }
     }
   }
 

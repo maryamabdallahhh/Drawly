@@ -43,6 +43,11 @@ class DrawingCanvas extends StatelessWidget {
                 // print('🖌️ Pan START on canvas: ${details.localPosition}');
                 onDrawStart(details.localPosition);
               },
+              onTapUp: (details) {
+                // Handles single tap (e.g. selection or drawing a dot)
+                onDrawStart(details.localPosition);
+                onDrawEnd();
+              },
               onPanUpdate: (details) {
                 onDrawUpdate(details.localPosition, details.delta);
               },
