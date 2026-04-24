@@ -9,12 +9,14 @@ class DrawingSettings {
   final double strokeWidth;
   final double opacity;
   final DrawingToolType toolType;
+  final bool isFilled;
 
   const DrawingSettings({
     required this.color,
     required this.strokeWidth,
     required this.opacity,
     required this.toolType,
+    this.isFilled = true,
   });
 
   /// Factory for tool-specific defaults
@@ -48,17 +50,30 @@ class DrawingSettings {
           opacity: 1.0,
           toolType: DrawingToolType.eraser,
         );
+      default:
+        // Shapes
+        return DrawingSettings(
+          color: Colors.black,
+          strokeWidth: 2.0,
+          opacity: 1.0,
+          toolType: tool,
+          isFilled: true,
+        );
     }
   }
 
   /// Convert settings to Paint object
   Paint toPaint() {
-    return PaintUtils.createDrawingPaint(
+    final paint = PaintUtils.createDrawingPaint(
       color: color,
       strokeWidth: strokeWidth,
       opacity: opacity,
       isEraser: toolType.isEraser,
     );
+    if (toolType.isShape && isFilled) {
+      paint.style = PaintingStyle.fill;
+    }
+    return paint;
   }
 
   DrawingSettings copyWith({
@@ -66,12 +81,14 @@ class DrawingSettings {
     double? strokeWidth,
     double? opacity,
     DrawingToolType? toolType,
+    bool? isFilled,
   }) {
     return DrawingSettings(
       color: color ?? this.color,
       strokeWidth: strokeWidth ?? this.strokeWidth,
       opacity: opacity ?? this.opacity,
       toolType: toolType ?? this.toolType,
+      isFilled: isFilled ?? this.isFilled,
     );
   }
 
@@ -82,12 +99,14 @@ class DrawingSettings {
           color == other.color &&
           strokeWidth == other.strokeWidth &&
           opacity == other.opacity &&
-          toolType == other.toolType;
+          toolType == other.toolType &&
+          isFilled == other.isFilled;
 
   @override
   int get hashCode =>
       color.hashCode ^
       strokeWidth.hashCode ^
       opacity.hashCode ^
-      toolType.hashCode;
+      toolType.hashCode ^
+      isFilled.hashCode;
 }

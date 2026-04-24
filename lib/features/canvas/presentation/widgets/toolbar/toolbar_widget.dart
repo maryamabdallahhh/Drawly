@@ -91,7 +91,7 @@ class _SubToolbar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentTool = ref.watch(currentToolProvider);
-    final isDrawingTool = currentTool == ToolType.pencil;
+    final isDrawingTool = currentTool == ToolType.pencil || currentTool == ToolType.shapes;
     final isEraser = ref.watch(drawingStateProvider.select((s) => s.settings.toolType.isEraser));
 
     final children = <Widget>[

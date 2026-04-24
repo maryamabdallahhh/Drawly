@@ -50,13 +50,23 @@ class SubToolButton extends ConsumerWidget {
 
   void _handleTap(WidgetRef ref) {
     ref.read(toolStateProvider.notifier).selectSubTool(subTool);
+    
+    // Auto-Deselect on Tool Change
+    ref.read(drawingStateProvider.notifier).deselectPath();
 
-    // Map subtool to drawing tool type
     final toolTypeMap = {
       'Pen': DrawingToolType.pen,
       'Marker': DrawingToolType.marker,
       'Highlighter': DrawingToolType.highlighter,
       'Eraser': DrawingToolType.eraser,
+      'Circle': DrawingToolType.circle,
+      'Rectangle': DrawingToolType.rectangle,
+      'Rounded Rectangle': DrawingToolType.roundedRectangle,
+      'Triangle': DrawingToolType.triangle,
+      'Down Triangle': DrawingToolType.downTriangle,
+      'Asterisk': DrawingToolType.asterisk,
+      'Heart': DrawingToolType.heart,
+      'Hexagonal': DrawingToolType.hexagonal,
     };
 
     if (toolTypeMap.containsKey(subTool.label)) {

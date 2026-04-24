@@ -53,6 +53,9 @@ class ToolButton extends ConsumerWidget {
 
     ref.read(toolStateProvider.notifier).selectTool(tool);
     ref.read(uiStateProvider.notifier).closeAllPanels();
+    
+    // Auto-Deselect on Tool Change
+    ref.read(drawingStateProvider.notifier).deselectPath();
 
     // If opening the drawing tools menu, default to Pen
     if (!wasSelected && tool == ToolType.pencil) {
