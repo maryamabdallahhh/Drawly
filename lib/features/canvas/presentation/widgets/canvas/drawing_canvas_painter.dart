@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../domain/models/drawing_path.dart';
 import '../../../domain/models/drawing_point.dart';
+import '../../../domain/models/drawing_tool_type.dart';
 
 class DrawingCanvasPainter extends CustomPainter {
   final List<DrawingPath> paths;
