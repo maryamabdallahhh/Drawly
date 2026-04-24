@@ -6,6 +6,9 @@ import '../../../../../core/widgets/custom_tooltip.dart';
 import '../../../domain/models/tool_type.dart';
 import '../../providers/tool_state_provider.dart';
 import '../../providers/ui_state_provider.dart';
+import '../../../domain/models/tool_config.dart';
+import '../../../domain/models/drawing_tool_type.dart';
+import '../../providers/drawing_state_provider.dart';
 
 class ToolButton extends ConsumerWidget {
   final ToolType tool;
@@ -45,7 +48,18 @@ class ToolButton extends ConsumerWidget {
   }
 
   void _handleTap(WidgetRef ref) {
+    final wasSelected = ref.read(toolStateProvider).selectedTool == tool;
+
     ref.read(toolStateProvider.notifier).selectTool(tool);
     ref.read(uiStateProvider.notifier).closeAllPanels();
+
+    // If opening the drawing tools menu, default to Pen
+    if (!wasSelected && tool == ToolType.pencil) {
+      final subTools = ToolConfigurations.getSubmenuFor(ToolType.pencil);
+      if (subTools != null && subTools.isNotEmpty) {
+        ref.read(toolStateProvider.notifier).selectSubTool(subTools.first);
+        ref.read(drawingStateProvider.notifier).changeToolType(DrawingToolType.pen);
+      }
+    }
   }
 }

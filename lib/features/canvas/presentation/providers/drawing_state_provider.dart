@@ -161,7 +161,7 @@ class DrawingStateNotifier extends StateNotifier<DrawingState> {
   void removeDocumentColor(Color color) {
     state = state.copyWith(
       documentColors: state.documentColors
-          .where((c) => c.value != color.value)
+          .where((c) => c.toARGB32() != color.toARGB32())
           .toList(),
     );
   }

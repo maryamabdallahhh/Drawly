@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vivid_canvas/features/canvas/domain/models/sub_tool_config.dart';
 import 'package:vivid_canvas/features/canvas/domain/models/tool_config.dart';
 import 'package:vivid_canvas/features/canvas/presentation/providers/canvas_state_provider.dart';
+import 'package:vivid_canvas/features/canvas/presentation/providers/drawing_state_provider.dart';
 
 import '../../../../../core/constants/app_sizes.dart';
 import '../../../../../core/constants/app_colors.dart';
@@ -70,6 +71,7 @@ class _SubToolbar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currentTool = ref.watch(currentToolProvider);
     final isDrawingTool = currentTool == ToolType.pencil;
+    final isEraser = ref.watch(drawingStateProvider.select((s) => s.settings.toolType.isEraser));
 
     return Container(
       width: AppSizes.toolbarWidth,
@@ -77,13 +79,12 @@ class _SubToolbar extends ConsumerWidget {
       child: Column(
         children: [
           ...subTools
-              .map((subTool) => SubToolButton(subTool: subTool))
-              .toList(),
+              .map((subTool) => SubToolButton(subTool: subTool)),
 
           // Drawing-specific indicators
           if (isDrawingTool) ...[
             const Divider(height: 1),
-            const ColorIndicatorWidget(),
+            if (!isEraser) const ColorIndicatorWidget(),
             const StrokeIndicatorWidget(),
           ],
         ],

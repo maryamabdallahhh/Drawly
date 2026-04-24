@@ -8,16 +8,16 @@ import 'package:vivid_canvas/core/theme/app_theme.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  runApp(const ProviderScope(child: VividCanvasApp()));
+  runApp(const ProviderScope(child: Drawly()));
 }
 
-class VividCanvasApp extends StatelessWidget {
-  const VividCanvasApp({super.key});
+class Drawly extends StatelessWidget {
+  const Drawly({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Vivid Canvas',
+      title: 'Drawly',
       theme: AppTheme.lightTheme,
       debugShowCheckedModeBanner: false,
       home: const WhiteboardScreen(),

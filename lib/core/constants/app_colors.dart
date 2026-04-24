@@ -32,7 +32,7 @@ class AppColors {
 
   // Drawing colors - Highlighter
   static const highlighterColors = [
-    Colors.yellow,
+    Color.fromARGB(255, 255, 171, 249),
     Color(0xFFFFEB3B),
     Color(0xFF8BC34A),
     Color(0xFF00BCD4),
@@ -43,7 +43,7 @@ class AppColors {
   // UI colors
   static final tooltipBackground = Colors.grey[800]!;
   static const panelBackground = Colors.white;
-  static final panelShadow = Colors.black.withOpacity(0.1);
+  static final panelShadow = Colors.black.withValues(alpha: 0.1);
   static final dividerColor = Colors.grey[300]!;
   static final borderColor = Colors.grey[300]!;
   static final gridDotColor = Colors.grey;

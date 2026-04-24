@@ -21,7 +21,7 @@ class AppTheme {
       sliderTheme: SliderThemeData(
         activeTrackColor: AppColors.iconPurple,
         thumbColor: AppColors.iconPurple,
-        overlayColor: AppColors.iconPurple.withOpacity(0.2),
+        overlayColor: AppColors.iconPurple.withValues(alpha: 0.2),
       ),
     );
   }

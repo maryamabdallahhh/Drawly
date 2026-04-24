@@ -27,12 +27,25 @@ class DrawingCanvas extends StatelessWidget {
       painter: DrawingCanvasPainter(paths: paths, currentPath: currentPath),
       child: isEnabled
           ? GestureDetector(
-              onPanStart: (details) => onDrawStart(details.localPosition),
-              onPanUpdate: (details) => onDrawUpdate(details.localPosition),
-              onPanEnd: (_) => onDrawEnd(),
+              // ✅ CRITICAL: Use translucent so it doesn't block everything
+              behavior: HitTestBehavior.translucent,
+              onPanStart: (details) {
+                // print('🖌️ Pan START on canvas: ${details.localPosition}');
+                onDrawStart(details.localPosition);
+              },
+              onPanUpdate: (details) {
+                onDrawUpdate(details.localPosition);
+              },
+              onPanEnd: (_) {
+                // print('🖌️ Pan END on canvas');
+                onDrawEnd();
+              },
               child: Container(color: Colors.transparent),
             )
-          : const SizedBox.expand(),
+          : Container(
+              // ✅ When disabled, use opaque behavior to fully block gestures
+              color: Colors.transparent,
+            ),
     );
   }
 }

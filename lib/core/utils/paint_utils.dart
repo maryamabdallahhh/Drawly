@@ -23,7 +23,7 @@ class PaintUtils {
     }
 
     return paint
-      ..color = color.withOpacity(opacity)
+      ..color = color.withValues(alpha: opacity)
       ..blendMode = BlendMode.srcOver;
   }
 
