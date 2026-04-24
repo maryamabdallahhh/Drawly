@@ -4,7 +4,8 @@ import '../../providers/ui_state_provider.dart';
 import '../../providers/drawing_state_provider.dart';
 
 class ColorIndicatorWidget extends ConsumerWidget {
-  const ColorIndicatorWidget({super.key});
+  final bool isHorizontal;
+  const ColorIndicatorWidget({super.key, this.isHorizontal = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -16,10 +17,17 @@ class ColorIndicatorWidget extends ConsumerWidget {
         if (renderBox != null) {
           final offset = renderBox.localToGlobal(Offset.zero);
           final size = renderBox.size;
-          // Position right next to the button, vertically aligned with it
-          ref.read(uiStateProvider.notifier).toggleColorPicker(
-            Offset(offset.dx + size.width + 16, offset.dy - 10)
-          );
+          if (isHorizontal) {
+            // Position above the button and centered horizontally
+            ref.read(uiStateProvider.notifier).toggleColorPicker(
+              Offset(offset.dx - 110 + (size.width / 2), offset.dy - 350)
+            );
+          } else {
+            // Position right next to the button, vertically aligned with it
+            ref.read(uiStateProvider.notifier).toggleColorPicker(
+              Offset(offset.dx + size.width + 16, offset.dy - 10)
+            );
+          }
         } else {
           ref.read(uiStateProvider.notifier).toggleColorPicker();
         }

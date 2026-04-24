@@ -21,14 +21,29 @@ class ToolbarWidget extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currentTool = ref.watch(currentToolProvider);
     final subTools = ToolConfigurations.getSubmenuFor(currentTool);
+    final isMobile = MediaQuery.sizeOf(context).width < 800;
+
+    if (isMobile) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          if (subTools != null && subTools.isNotEmpty) ...[
+            _SubToolbar(subTools: subTools, isHorizontal: true),
+            const SizedBox(height: AppSizes.toolbarSpacing),
+          ],
+          const _MainToolbar(isHorizontal: true),
+        ],
+      );
+    }
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _MainToolbar(),
+        const _MainToolbar(isHorizontal: false),
         if (subTools != null && subTools.isNotEmpty) ...[
           const SizedBox(width: AppSizes.toolbarSpacing),
-          _SubToolbar(subTools: subTools),
+          _SubToolbar(subTools: subTools, isHorizontal: false),
         ],
       ],
     );
@@ -37,18 +52,23 @@ class ToolbarWidget extends ConsumerWidget {
 
 /// Main toolbar with primary tools
 class _MainToolbar extends StatelessWidget {
-  const _MainToolbar();
+  final bool isHorizontal;
+  
+  const _MainToolbar({required this.isHorizontal});
 
   @override
   Widget build(BuildContext context) {
+    final children = ToolType.values
+        .map((tool) => ToolButton(tool: tool, isHorizontal: isHorizontal))
+        .toList();
+
     return Container(
-      width: AppSizes.toolbarWidth,
+      width: isHorizontal ? null : AppSizes.toolbarWidth,
+      height: isHorizontal ? AppSizes.toolbarWidth : null,
       decoration: _toolbarDecoration(),
-      child: Column(
-        children: ToolType.values
-            .map((tool) => ToolButton(tool: tool))
-            .toList(),
-      ),
+      child: isHorizontal
+          ? Row(mainAxisSize: MainAxisSize.min, children: children)
+          : Column(mainAxisSize: MainAxisSize.min, children: children),
     );
   }
 
@@ -64,8 +84,9 @@ class _MainToolbar extends StatelessWidget {
 /// Submenu toolbar with context-specific tools
 class _SubToolbar extends ConsumerWidget {
   final List<SubToolConfig> subTools;
+  final bool isHorizontal;
 
-  const _SubToolbar({required this.subTools});
+  const _SubToolbar({required this.subTools, required this.isHorizontal});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -73,22 +94,23 @@ class _SubToolbar extends ConsumerWidget {
     final isDrawingTool = currentTool == ToolType.pencil;
     final isEraser = ref.watch(drawingStateProvider.select((s) => s.settings.toolType.isEraser));
 
-    return Container(
-      width: AppSizes.toolbarWidth,
-      decoration: _toolbarDecoration(),
-      child: Column(
-        children: [
-          ...subTools
-              .map((subTool) => SubToolButton(subTool: subTool)),
+    final children = <Widget>[
+      ...subTools.map((subTool) => SubToolButton(subTool: subTool, isHorizontal: isHorizontal)),
+      // Drawing-specific indicators
+      if (isDrawingTool) ...[
+        if (isHorizontal) const VerticalDivider(width: 1) else const Divider(height: 1),
+        if (!isEraser) ColorIndicatorWidget(isHorizontal: isHorizontal),
+        StrokeIndicatorWidget(isHorizontal: isHorizontal),
+      ],
+    ];
 
-          // Drawing-specific indicators
-          if (isDrawingTool) ...[
-            const Divider(height: 1),
-            if (!isEraser) const ColorIndicatorWidget(),
-            const StrokeIndicatorWidget(),
-          ],
-        ],
-      ),
+    return Container(
+      width: isHorizontal ? null : AppSizes.toolbarWidth,
+      height: isHorizontal ? AppSizes.toolbarWidth : null,
+      decoration: _toolbarDecoration(),
+      child: isHorizontal
+          ? Row(mainAxisSize: MainAxisSize.min, children: children)
+          : Column(mainAxisSize: MainAxisSize.min, children: children),
     );
   }
 

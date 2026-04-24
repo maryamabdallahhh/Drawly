@@ -13,8 +13,9 @@ import '../../providers/drawing_state_provider.dart';
 class ToolButton extends ConsumerWidget {
   final ToolType tool;
   final VoidCallback? onTap;
+  final bool isHorizontal;
 
-  const ToolButton({super.key, required this.tool, this.onTap});
+  const ToolButton({super.key, required this.tool, this.onTap, this.isHorizontal = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -30,7 +31,7 @@ class ToolButton extends ConsumerWidget {
       child: isHovering
           ? TooltipWrapper(
               message: tool.label,
-              tooltipSide: TooltipSide.right,
+              tooltipSide: isHorizontal ? TooltipSide.top : TooltipSide.right,
               child: _buildButton(ref, isSelected, isHovering),
             )
           : _buildButton(ref, isSelected, isHovering),

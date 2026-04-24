@@ -15,6 +15,7 @@ class WhiteboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final uiState = ref.watch(uiStateProvider);
     final isEraser = ref.watch(drawingStateProvider.select((s) => s.settings.toolType.isEraser));
+    final isMobile = MediaQuery.sizeOf(context).width < 800;
 
     return Scaffold(
       body: Stack(
@@ -23,7 +24,13 @@ class WhiteboardScreen extends ConsumerWidget {
           const Positioned.fill(child: CanvasWidget()),
 
           // Toolbar overlay (MIDDLE LAYER)
-          const Positioned(top: 50, left: 100, child: ToolbarWidget()),
+          Positioned(
+            top: isMobile ? null : 50,
+            bottom: isMobile ? 20 : null,
+            left: isMobile ? 0 : 100,
+            right: isMobile ? 0 : null,
+            child: const ToolbarWidget(),
+          ),
 
           // ✅ PANELS AT ROOT LEVEL (TOP LAYER) - Better gesture isolation
           // Color Picker Panel
