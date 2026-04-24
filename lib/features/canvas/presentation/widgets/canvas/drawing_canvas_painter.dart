@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../../domain/models/drawing_path.dart';
@@ -116,9 +117,25 @@ class DrawingCanvasPainter extends CustomPainter {
         break;
       case DrawingToolType.heart:
         final path = Path();
-        path.moveTo(rect.center.dx, rect.top + rect.height * 0.3);
-        path.cubicTo(rect.left, rect.top - rect.height * 0.1, rect.left, rect.bottom * 0.7, rect.center.dx, rect.bottom);
-        path.cubicTo(rect.right, rect.bottom * 0.7, rect.right, rect.top - rect.height * 0.1, rect.center.dx, rect.top + rect.height * 0.3);
+        final width = rect.width;
+        final height = rect.height;
+        final x = rect.left;
+        final y = rect.top;
+
+        path.moveTo(x + 0.5 * width, y + 0.35 * height);
+        path.cubicTo(x + 0.5 * width, y + 0.1 * height,
+                     x + 1.0 * width, y + 0.1 * height,
+                     x + 1.0 * width, y + 0.4 * height);
+        path.cubicTo(x + 1.0 * width, y + 0.7 * height,
+                     x + 0.5 * width, y + 0.9 * height,
+                     x + 0.5 * width, y + 1.0 * height);
+        path.cubicTo(x + 0.5 * width, y + 0.9 * height,
+                     x + 0.0 * width, y + 0.7 * height,
+                     x + 0.0 * width, y + 0.4 * height);
+        path.cubicTo(x + 0.0 * width, y + 0.1 * height,
+                     x + 0.5 * width, y + 0.1 * height,
+                     x + 0.5 * width, y + 0.35 * height);
+        path.close();
         canvas.drawPath(path, paint);
         break;
       case DrawingToolType.hexagonal:
@@ -132,11 +149,27 @@ class DrawingCanvasPainter extends CustomPainter {
         path.close();
         canvas.drawPath(path, paint);
         break;
-      case DrawingToolType.asterisk:
-        canvas.drawLine(rect.topCenter, rect.bottomCenter, paint);
-        canvas.drawLine(rect.centerLeft, rect.centerRight, paint);
-        canvas.drawLine(rect.topLeft, rect.bottomRight, paint);
-        canvas.drawLine(rect.bottomLeft, rect.topRight, paint);
+      case DrawingToolType.asterisk: // Actually a Star
+        final path = Path();
+        final center = rect.center;
+        final outerRadius = math.min(rect.width, rect.height) / 2;
+        final innerRadius = outerRadius * 0.4;
+        
+        for (int i = 0; i < 10; i++) {
+          final radius = i.isEven ? outerRadius : innerRadius;
+          final angle = (math.pi * i / 5) - (math.pi / 2); // Start at top
+          
+          final x = center.dx + radius * math.cos(angle);
+          final y = center.dy + radius * math.sin(angle);
+          
+          if (i == 0) {
+            path.moveTo(x, y);
+          } else {
+            path.lineTo(x, y);
+          }
+        }
+        path.close();
+        canvas.drawPath(path, paint);
         break;
       default:
         canvas.drawRect(rect, paint);
